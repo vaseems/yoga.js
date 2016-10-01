@@ -1,0 +1,26 @@
+{
+  "name": "superjs",
+  "version": "1.0.0",
+  "description": "JavaScript which powers JavaScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vaseems/superjs.git"
+  },
+  "keywords": [
+    "dependency",
+    "injection",
+    "DI",
+    "IoC",
+    "MVC"
+  ],
+  "author": "Vaseem Abbas Mohammed",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vaseems/superjs/issues"
+  },
+  "homepage": "https://github.com/vaseems/superjs#readme"
+}
