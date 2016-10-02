@@ -1,6 +1,6 @@
 {
   "name": "Yoga.js",
   "tagline": "Javascript library which powers javascript",
-  "body": "### Welcome to Yoga.JS.\r\nMany libraries are available which gives similar functionality to what Yoga.JS provides. But all libraries provides functions in different scope which requires more parameters more code. Yoga.JS powers javascript objects by adding methods to existing objects as if it supports by default by the javascript engine.\r\n\r\n### Authors and Contributors\r\nAuthor: Vaseem Abbas Mohammed\r\n\r\n### Report Issues\r\nReport issues [Report Issues](https://github.com/vaseems/yoga.js/issues)\r\n",
+  "body": "### Welcome to Yoga.JS.\r\nMany libraries are available which gives similar functionality to what Yoga.JS provides. But all libraries provides functions in different scope which requires more parameters more code. Yoga.JS powers javascript objects by adding methods to existing objects as if it supports by default by the javascript engine.\r\n\r\n### Authors and Contributors\r\nAuthor: Vaseem Abbas Mohammed\r\n\r\n### Suggestions/Issues\r\n[Click here for Suggestions/Issues](https://github.com/vaseems/yoga.js/issues)\r\n",
   "note": "Don't delete this file! It's used internally to help with page regeneration."
 }
