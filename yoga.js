@@ -1,7 +1,7 @@
 /**
  * Created by vabbasmoha on 10/2/16.
  */
-var superjs = Object.create({}, {});
+var yogajs = Object.create({}, {});
 
 Array.prototype.iterator = function(){
     var pos = 0;
@@ -21,7 +21,6 @@ Array.prototype.concat = function concat(a){
     }
 };
 
-
 Object.prototype.entries = function entries(){
     var keys = Object.keys(this), i=0, entries= [];
     while(i < keys.length){
@@ -32,7 +31,3 @@ Object.prototype.entries = function entries(){
     }
     return entries;
 };
-
-Object.prototype.toHTML = function toHTML(){
-
-}
