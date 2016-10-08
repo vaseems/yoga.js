@@ -30,6 +30,18 @@ Many libraries are available which gives similar functionality to what Yoga.JS p
     console.log(a.next());
 }`
 
+## Array apply()
+
+`var a = [10, 20, 30];`
+
+
+`a.apply(square);`
+
+`//[100, 400, 900]`
+
+
+`function square(n){ return n*n; }`
+
 ## Object Entries
 
 `var a = { foo: "bar", baz: 42 };
