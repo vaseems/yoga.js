@@ -1,42 +1,62 @@
 /**
  * Created by vabbasmoha on 10/2/16.
  */
-var yogajs = Object.create({}, {});
+(function(){
 
-Array.prototype.iterator = function(){
-    var pos = 0;
-    this.hasNext = function(){
-        return this.length > pos;
+    var yoga = {
+        ananthasana: {type: Array},
+        salabhasana: {type: String},
+        nadishodhana: {type: Number},
+        balasana: {type: Boolean},
+        dhyana: {type: Date},
+        ekasana: {type: Object}
     };
-    this.next = function(){
-        return this[pos++];
+
+    yoga.ananthasana.iterator = function(){
+        var pos = 0;
+        this.hasNext = function(){
+            return this.length > pos;
+        };
+        this.next = function(){
+            return this[pos++];
+        };
+        return this;
     };
-    return this;
-};
 
-Array.prototype.concat = function(a){
-    a.iterator();
-    while(a.hasNext()){
-        this.push(a.next());
-    }
-};
+    yoga.ananthasana.concat = function(a){
+        a.iterator();
+        while(a.hasNext()){
+            this.push(a.next());
+        }
+    };
 
-Array.prototype.apply = function(operation){
-    this.iterator();
-    var result = [];
-    while(this.hasNext()){
-        result.push(operation.call(this, this.next()));
-    }
-    return result;
-}
+    yoga.ananthasana.apply = function(operation){
+        this.iterator();
+        var result = [];
+        while(this.hasNext()){
+            result.push(operation.call(this, this.next()));
+        }
+        return result;
+    };
 
-Object.prototype.entries = function(){
-    var keys = Object.keys(this), i=0, entries= [];
-    while(i < keys.length){
-        var entry = [];
-        entry.push(keys[i]);
-        entry.push(this[keys[i++]]);
-        entries.push(entry);
-    }
-    return entries;
-};
+    yoga.ekasana.size = function(){
+      return Object.keys(this).length;
+    };
+
+    yoga.ekasana.entries = function(){
+        var keys = Object.keys(this), i=0, entries= [];
+        while(i < keys.length){
+            var entry = [];
+            entry.push(keys[i]);
+            entry.push(this[keys[i++]]);
+            entries.push(entry);
+        }
+        return entries;
+    };
+
+    Object.keys(yoga).forEach(function(asana){
+        Object.keys(yoga[asana]).forEach(function(power){
+            yoga[asana].type.prototype[power] = yoga[asana][power];
+        });
+    });
+})();
