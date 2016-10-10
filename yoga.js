@@ -17,6 +17,7 @@
         matsyasana: {prototype: Function.prototype},
         virabhadrasana: {prototype: Window.prototype}
     };
+
     var MSG_NO_DIFFERENCE = "No Difference";
 
     var isArray = function(array){
@@ -24,7 +25,7 @@
     };
 
     var isObject = function(obj){
-        return typeof array == 'object' && (array) instanceof Array && !((array) instanceof Object);
+        return typeof obj == 'object' && (obj) instanceof Object && !((obj) instanceof Array);
     };
 
     var contains = function(array, ele){
@@ -34,8 +35,6 @@
     yoga.ananthasana.contains = function(ele){
         return contains(this, ele);
     };
-
-
 
     yoga.ananthasana.iterator = function(){
         var pos = 0;
