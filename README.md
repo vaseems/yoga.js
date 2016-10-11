@@ -42,11 +42,58 @@ Many libraries are available which gives similar functionality to what Yoga.JS p
 
 `function square(n){ return n*n; }`
 
+##Array Truthy
+
+`var a = [10, 0, 30, true, false];`
+
+
+`a.truthy()`
+
+`//[10,30,true]`
+
+##Array Difference
+
+`var a = [10, 20, 30];`
+`var b = [10, 40, 30];`
+
+
+`a.difference(b)`
+
+`//[20,40]`
+
+
+
+## Object size
+
+`var a = {a:1, b:2, c:3}`
+
+`a.size()`
+
+`//3`
+
 ## Object Entries
 
 `var a = { foo: "bar", baz: 42 };
 a.entries();`    // [ ['foo', 'bar'], ['baz', 42] ]
 
+## Function memoize
+
+`function add(a,b,c){return a + b + c;}`
+
+`var madd = add.memoize()`
+
+`madd()`
+
+## Window isArray
+
+`isArray({}) //false`
+`isArray([]) //true`
+
+## Window isObject
+
+`isObject([]) //false`
+
+`isObject({}) //true`
 
 ### Authors and Contributors
 Author: Vaseem Abbas Mohammed
