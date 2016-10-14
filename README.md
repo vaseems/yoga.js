@@ -11,89 +11,102 @@ Many libraries are available which gives similar functionality to what Yoga.JS p
 
 ## Array Concat
 
-`var a = [10, 20, 30];`
+```
+var a = [10, 20, 30];
+var b = [40, 50, 60];
 
-
-`var b = [40, 50, 60];`
-
-`a.concat(b);`
+a.concat(b);
+```
 
 ## Array Iterator
 
-`var a = [10, 20, 30];`
+```
+var a = [10, 20, 30];
 
-
-`a.iterator();`
-
-
-`while(a.hasNext()){
+a.iterator();
+while(a.hasNext()){
     console.log(a.next());
-}`
+}
+```
 
 ## Array apply()
 
-`var a = [10, 20, 30];`
+```
+function square(n){ return n*n; }
 
+var a = [10, 20, 30];
 
-`a.apply(square);`
+a.apply(square);
 
-`//[100, 400, 900]`
+//Result: [100, 400, 900]
 
-
-`function square(n){ return n*n; }`
+```
 
 ##Array Truthy
 
-`var a = [10, 0, 30, true, false];`
+```
+var a = [10, 0, 30, true, false];
 
+a.truthy()
 
-`a.truthy()`
-
-`//[10,30,true]`
+//Result: [10,30,true]
+```
 
 ##Array Difference
 
-`var a = [10, 20, 30];`
-`var b = [10, 40, 30];`
+```
+var a = [10, 20, 30];
+var b = [10, 40, 30];
 
+a.difference(b)
 
-`a.difference(b)`
-
-`//[20,40]`
-
-
+//[20,40]
+```
 
 ## Object size
 
-`var a = {a:1, b:2, c:3}`
+```
+var a = {a:1, b:2, c:3}
 
-`a.size()`
+a.size()
 
-`//3`
+//3
+```
 
 ## Object Entries
 
-`var a = { foo: "bar", baz: 42 };
-a.entries();`    // [ ['foo', 'bar'], ['baz', 42] ]
+```
+var a = { foo: "bar", baz: 42 };
+a.entries();
+
+//Result:  [ ['foo', 'bar'], ['baz', 42] ]
+```
 
 ## Function memoize
 
-`function add(a,b,c){return a + b + c;}`
+```
+function add(a,b,c){return a + b + c;}
 
-`var madd = add.memoize()`
+var madd = add.memoize()
 
-`madd()`
+madd()
+```
 
 ## Window isArray
 
-`isArray({}) //false`
-`isArray([]) //true`
+```
+isArray({}) //false
+isArray([]) //true
+```
 
 ## Window isObject
 
-`isObject([]) //false`
+```
+isObject([]) //false
 
-`isObject({}) //true`
+isObject({}) //true
+
+```
 
 ### Authors and Contributors
 Author: Vaseem Abbas Mohammed
