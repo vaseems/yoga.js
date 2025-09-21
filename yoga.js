@@ -5,272 +5,246 @@
  * Copyright Vaseem Abbas Mohammed
  */
 
-;!function(){
-
-    var yoga = {
-        ananthasana: {prototype: Array.prototype},
-        salabhasana: {prototype: String.prototype},
-        nadishodhana: {prototype: Number.prototype},
-        balasana: {prototype: Boolean.prototype},
-        makarasana: {prototype: Math},
-        dhyana: {prototype: Date.prototype},
-        ekasana: {prototype: Object.prototype},
-        matsyasana: {prototype: Function.prototype},
-        virabhadrasana: {prototype: Window.prototype}
+; (() => {
+    const yoga = {
+        ananthasana: { prototype: Array.prototype },
+        salabhasana: { prototype: String.prototype },
+        nadishodhana: { prototype: Number.prototype },
+        balasana: { prototype: Boolean.prototype },
+        makarasana: { prototype: Math },
+        dhyana: { prototype: Date.prototype },
+        ekasana: { prototype: Object.prototype },
+        matsyasana: { prototype: Function.prototype },
+        virabhadrasana: {} // safer than Window.prototype
     };
 
-    var MSG_NO_DIFFERENCE = "No Difference";
+    const MSG_NO_DIFFERENCE = "No Difference";
 
-    var isArray = function(array){
-      return typeof array == 'object' && (array) instanceof Array;
+    const isArray = Array.isArray;
+    const isObject = (obj) =>
+        Object.prototype.toString.call(obj) === "[object Object]";
+    const shallowCopy = (array) => Array.prototype.slice.call(array);
+    const setConstant = (value) => ({
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value
+    });
+    const inspect = (array) =>
+        array.length === 0
+            ? MSG_NO_DIFFERENCE
+            : array.length === 1
+                ? array[0]
+                : array;
+
+    /* ---------------- Array ---------------- */
+    yoga.ananthasana.contains = function (ele) {
+        return this.indexOf(ele) !== -1;
     };
 
-    var isObject = function(obj){
-        return typeof obj == 'object' && (obj) instanceof Object && !((obj) instanceof Array);
-    };
-
-    function isNumber(arg) {
-        return typeof arg === 'number' && arg === arg;
-    }
-
-
-    var contains = function(arr, ele){
-      return arr.indexOf(ele) != -1;
-    };
-
-    var shallowCopy = function(array){
-        return Array.prototype.slice.call(array);
-    };
-
-    var setConstant = function(value){
+    yoga.ananthasana.iterator = function () {
+        let pos = 0;
+        const arr = this;
         return {
-            enumerable: false,
-            configurable: false,
-            writable: false,
-            value: value
+            hasNext: () => pos < arr.length,
+            next: () => arr[pos++]
         };
     };
 
-    var inspect = (array) => {
-        return array.length == 0?MSG_NO_array:array.length==1?array[0]:array;
-    }
-
-    /*
-     * Array
-     * */
-
-    yoga.ananthasana.contains = function(ele){
-        return contains(this, ele);
+    yoga.ananthasana.concatAll = function (a) {
+        return this.concat(a);
     };
 
-    yoga.ananthasana.iterator = function(){
-        var pos = 0;
-        this.hasNext = function(){
-            return this.length > pos;
-        };
-        this.next = function(){
-            return this[pos++];
-        };
-        return this;
+    yoga.ananthasana.apply = function (operation) {
+        return this.map(operation);
     };
 
-    yoga.ananthasana.concat = function(a){
-        this.push.apply(this, a);
+    yoga.ananthasana.truthy = function () {
+        return this.filter(Boolean);
     };
 
-    yoga.ananthasana.apply = function(operation){
-        this.iterator();
-        var result = [];
-        while(this.hasNext()){
-            result.push(operation.call(this, this.next()));
+    yoga.ananthasana.difference = function (array) {
+        if (!isArray(array)) {
+            console.error("TypeError: Passed parameter is not an Array");
+            return inspect(this);
         }
-        return result;
+        const diff = [
+            ...this.filter((x) => !array.includes(x)),
+            ...array.filter((x) => !this.includes(x))
+        ];
+        return inspect([...new Set(diff)]);
     };
 
-    yoga.ananthasana.truthy = function(){
-        var truths = [], falsy = [];
-        this.iterator();
-        while(this.hasNext()){
-            var next = this.next();
-            if(next){
-                truths.push(next);
-            }else{
-                falsy.push(next);
-            }
+    yoga.ananthasana.differenceBy = function (array, fn) {
+        const mapper = fn || ((x) => x);
+        const setA = new Set(this.map(mapper));
+        const setB = new Set(array.map(mapper));
+        const diff = [...setA].filter((x) => !setB.has(x));
+        return inspect(diff);
+    };
+
+    yoga.ananthasana.unique = function () {
+        return [...new Set(this)];
+    };
+
+    yoga.ananthasana.flatten = function (depth = 1) {
+        return this.flat(depth);
+    };
+
+    yoga.ananthasana.groupBy = function (fn) {
+        return this.reduce((acc, val) => {
+            const key = fn(val);
+            (acc[key] = acc[key] || []).push(val);
+            return acc;
+        }, {});
+    };
+
+    yoga.ananthasana.chunk = function (size) {
+        const res = [];
+        for (let i = 0; i < this.length; i += size) {
+            res.push(this.slice(i, i + size));
         }
-        return truths;
+        return res;
     };
 
-    yoga.ananthasana.difference = function(array){
-        var difference = [];
-        var _self = this;
-        if(!isArray(array)){console.error("TypeError: Passed parameter is not an Array");return inspect(_self);}
-        array.forEach((ele) => {
-            !_self.contains(ele) && difference.push(ele);
-        });
-        this.forEach((ele) => {
-            !array.contains(ele) && !difference.contains(ele) && difference.push(ele);
-        });
-        return inspect(difference);
+    yoga.ananthasana.intersection = function (arr) {
+        return this.filter((x) => arr.includes(x));
     };
 
-    //TODO
-    yoga.ananthasana.differenceBy = function(array, operationBy){
-        var difference = [];
-        this.forEach(function(ele){
-            array.contains(ele) && difference.push(ele);
-        });
-        return inspect(difference);
-    };
-
-    /*
-     * Object
-     * */
-
-    yoga.ekasana.size = function(){
+    /* ---------------- Object ---------------- */
+    yoga.ekasana.size = function () {
         return Object.keys(this).length;
     };
 
-    yoga.ekasana.entries = function(){
-        var keys = Object.keys(this), i = 0, entries = [];
-        while(i < keys.length){
-            var entry = [];
-            entry.push(keys[i]);
-            entry.push(this[keys[i++]]);
-            entries.push(entry);
-        }
-        return entries;
+    yoga.ekasana.entries = function () {
+        return Object.entries(this);
     };
 
-    yoga.ekasana.template = (template, ele) => {
-        "use strict";
-        this.keys.forEach()
+    yoga.ekasana.mapValues = function (fn) {
+        return Object.fromEntries(
+            Object.entries(this).map(([k, v]) => [k, fn(v, k)])
+        );
     };
 
-    /*
-     * Math Object
-     *
-     */
-    yoga.makarasana.add = function(){
-        var args = [...arguments];
-        return args.reduce((total, num) => {
-            return total + num;
-        });
+    yoga.ekasana.pick = function (keys) {
+        return keys.reduce((acc, k) => {
+            if (k in this) acc[k] = this[k];
+            return acc;
+        }, {});
     };
 
+    yoga.ekasana.omit = function (keys) {
+        return Object.fromEntries(
+            Object.entries(this).filter(([k]) => !keys.includes(k))
+        );
+    };
 
-    /*
-     * Function
-     * */
+    yoga.ekasana.deepClone = function () {
+        return structuredClone(this);
+    };
 
-    yoga.matsyasana.memoize = function(context){
-        var self = this.name;
-        var obj = (context || window)[self];
-        obj = () => {
-            var args = shallowCopy(arguments),
-                cache = obj.cache || (obj.cache = {});
-            return cache[args] ||  (cache[args] = obj.apply(this, args));
+    /* ---------------- String ---------------- */
+    yoga.salabhasana.capitalize = function () {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+    };
+
+    yoga.salabhasana.reverse = function () {
+        return this.split("").reverse().join("");
+    };
+
+    yoga.salabhasana.camelCase = function () {
+        return this.replace(/[-_](.)/g, (_, c) => c.toUpperCase());
+    };
+
+    /* ---------------- Number ---------------- */
+    yoga.nadishodhana.clamp = function (min, max) {
+        return Math.min(Math.max(this, min), max);
+    };
+
+    yoga.nadishodhana.toCurrency = function (locale = "en-US", currency = "USD") {
+        return new Intl.NumberFormat(locale, { style: "currency", currency }).format(
+            this
+        );
+    };
+
+    /* ---------------- Date ---------------- */
+    yoga.dhyana.format = function (pattern = "YYYY-MM-DD HH:mm:ss") {
+        const pad = (n) => String(n).padStart(2, "0");
+        return pattern
+            .replace("YYYY", this.getFullYear())
+            .replace("MM", pad(this.getMonth() + 1))
+            .replace("DD", pad(this.getDate()))
+            .replace("HH", pad(this.getHours()))
+            .replace("mm", pad(this.getMinutes()))
+            .replace("ss", pad(this.getSeconds()));
+    };
+
+    yoga.dhyana.addDays = function (n) {
+        const d = new Date(this);
+        d.setDate(d.getDate() + n);
+        return d;
+    };
+
+    /* ---------------- Function ---------------- */
+    yoga.matsyasana.memoize = function () {
+        const fn = this;
+        const cache = new Map();
+        return function (...args) {
+            const key = JSON.stringify(args);
+            if (cache.has(key)) return cache.get(key);
+            const result = fn.apply(this, args);
+            cache.set(key, result);
+            return result;
         };
     };
 
-    yoga.matsyasana.curry = function(){
-        var args = shallowCopy(arguments, 1);
-        var self = this;
-        return () => {
-          return self.apply(this, args.concat(
-              shallowCopy(arguments, 0)
-          ));
+    yoga.matsyasana.curry = function (...args) {
+        const fn = this;
+        return function (...next) {
+            return fn.apply(this, args.concat(next));
         };
     };
 
-    /*
-    * Window
-    * */
-
-
-    Object.defineProperties(yoga.virabhadrasana, {
-        "GET"       : setConstant("GET"),
-        "POST"      : setConstant("POST"),
-        "PUT"       : setConstant("PUT"),
-        "DELETE"    : setConstant("DELETE")
-    });
-
-    yoga.virabhadrasana.isArray = function(obj){
-        return isArray(obj);
+    yoga.matsyasana.debounce = function (delay) {
+        let timer;
+        const fn = this;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        };
     };
 
-    yoga.virabhadrasana.isObject = function(obj){
-        return isObject(obj);
-    };
-
-    yoga.virabhadrasana.$http = (function $http(url){
-
-        var core = {
-
-            ajax: function (method, url, args) {
-
-                var promise = new Promise( function (resolve, reject) {
-
-                    var client = new XMLHttpRequest();
-                    var uri = url;
-
-                    if (args && (method === 'POST' || method === 'PUT')) {
-                        uri += '?';
-                        var argcount = 0;
-                        for (var key in args) {
-                            if (args.hasOwnProperty(key)) {
-                                if (argcount++) {
-                                    uri += '&';
-                                }
-                                uri += encodeURIComponent(key) + '=' + encodeURIComponent(args[key]);
-                            }
-                        }
-                    }
-
-                    client.open(method, uri);
-                    client.send();
-
-                    client.onload = () => {
-                        if (this.status >= 200 && this.status < 300) {
-                            resolve(this.response);
-                        } else {
-                            reject(this.statusText);
-                        }
-                    };
-                    client.onerror = function () {
-                        reject(this.statusText);
-                    };
-                });
-
-                // Return the promise
-                return promise;
+    yoga.matsyasana.throttle = function (delay) {
+        let last = 0;
+        const fn = this;
+        return function (...args) {
+            const now = Date.now();
+            if (now - last >= delay) {
+                last = now;
+                fn.apply(this, args);
             }
         };
-
-        // Adapter pattern
-        return {
-            'get': function(args) {
-                return core.ajax('GET', url, args);
-            },
-            'post': function(args) {
-                return core.ajax('POST', url, args);
-            },
-            'put': function(args) {
-                return core.ajax('PUT', url, args);
-            },
-            'delete': function(args) {
-                return core.ajax('DELETE', url, args);
+    };
+    
+    // Install methods onto the target prototypes (from the `yoga` map)
+    Object.keys(yoga).forEach((key) => {
+        const meta = yoga[key];
+        const proto = meta && meta.prototype;
+        if (!proto) return; // skip entries without a prototype
+        Object.keys(meta).forEach((name) => {
+            if (name === 'prototype') return;
+            const fn = meta[name];
+            if (typeof fn !== 'function') return;
+            try {
+                Object.defineProperty(proto, name, setConstant(fn));
+            } catch (e) {
+                // fallback to direct assign if defineProperty fails in some environments
+                proto[name] = fn;
             }
-        };
-    })();
-
-
-    Object.keys(yoga).forEach((asana) => {
-        Object.keys(yoga[asana]).forEach((power) => {
-            if(power != 'prototype'){
-                yoga[asana].prototype[power] = yoga[asana][power];
-            }
-
         });
     });
-}();
+
+    // Expose the yoga registry for debugging
+    if (typeof window !== 'undefined') window.yoga = yoga;
+
+})();

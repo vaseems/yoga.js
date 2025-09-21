@@ -1,16 +1,511 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script type="text/javascript" src="yoga.js"></script>
-    <script type=""text/javascript">
-    console.log([1,2].difference([2,3]));
-    console.log([1,2,3,4,5,6,7,8].difference([2,3]));
-    console.log([].difference({}));
-    </script>
-    <meta charset="UTF-8">
-    <title>Title</title>
+  <meta charset="UTF-8" />
+  <title>Yoga.js Playground</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <style>
+    html, body { height: 100%; }
+    /* ensure active sidebar text sits above the highlight */
+    .sidebar-btn.active { position: relative; z-index: 10; }
+    /* toggle background when checked */
+    input#safeToggle:checked + div { background-color: #7c3aed; }
+  </style>
 </head>
-<body>
-hello
+<body class="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white p-6 shadow-lg">
+    <h1 class="text-3xl font-bold">🧘 Yoga.js Playground</h1>
+    <p class="mt-1 text-indigo-200">Explore extended JavaScript utilities interactively</p>
+    <div class="mt-3 flex items-center space-x-3">
+      <label class="text-indigo-100 font-medium">Safe mode</label>
+      <label class="inline-flex items-center cursor-pointer">
+        <input id="safeToggle" type="checkbox" checked class="sr-only" />
+        <div class="w-10 h-6 bg-indigo-300 rounded-full relative transition-colors" aria-hidden="true"></div>
+      </label>
+      <p class="text-indigo-200 text-sm">When Safe mode is off, developer evaluation is allowed (unsafe).</p>
+    </div>
+  </header>
+
+  <!-- Main layout -->
+  <div class="flex flex-1 overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-80 bg-white shadow-lg overflow-y-auto relative">
+      <div class="px-4 pt-4 pb-2 sticky top-0 bg-white z-20 border-b">
+        <h2 class="text-xl font-bold text-indigo-600">Functions</h2>
+      </div>
+   <ul id="sidebar" class="relative space-y-2 p-2">
+     <div id="highlight"
+       class="absolute left-0 right-0 bg-indigo-50 rounded-md pointer-events-none"
+       style="opacity:0; top:0; height:0; z-index:0;"></div>
+   </ul>
+    </aside>
+
+    <!-- Content panel -->
+    <main class="flex-1 p-6 overflow-auto">
+      <div id="content" class="bg-white rounded-xl shadow-lg p-8 w-full h-full text-left">
+        <h2 class="text-2xl font-bold text-indigo-700">Select a function</h2>
+        <p class="mt-2 text-gray-600">Click a function in the sidebar to view its documentation and try it out.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Include your yoga.js -->
+  <script src="yoga.js"></script>
+
+  <!-- Playground logic -->
+  <script>
+  // Safe parser for small function strings (arrow expressions or known global refs)
+  function parseFunctionString(str) {
+      if (!str || typeof str !== 'string') throw new Error('Function must be a string');
+      const s = str.trim();
+      // Allow bare global references like Math.floor
+      if (/^[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*$/.test(s)) {
+        const allowedRoots = { Math, Number, parseInt, parseFloat, String, JSON };
+        const parts = s.split('.');
+        const root = parts[0];
+        if (!(root in allowedRoots)) throw new Error('Reference not allowed: ' + root);
+        let ref = allowedRoots[root];
+        for (let i = 1; i < parts.length; i++) {
+          ref = ref[parts[i]];
+          if (ref === undefined) throw new Error('Invalid reference: ' + s);
+        }
+        if (typeof ref !== 'function') throw new Error('Reference is not a function: ' + s);
+        return ref;
+      }
+
+      // Arrow function with expression body: (a,b)=>a+b  or x=>x*2
+      const arrowMatch = s.match(/^\s*(?:\(([^)]*)\)|([a-zA-Z_$][\w$]*))\s*=>\s*(.+)$/s);
+      if (arrowMatch) {
+        const params = (arrowMatch[1] || arrowMatch[2] || '').trim();
+        let body = arrowMatch[3].trim();
+        // Disallow block bodies ({ ... }) for safety
+        if (body.startsWith('{')) throw new Error('Block bodies are not allowed');
+        // Reject suspicious tokens
+        const banned = /(window|document|eval|Function|constructor|process|require|import|fetch|XMLHttpRequest|setTimeout|setInterval|while\b|for\b|;)/i;
+        if (banned.test(body)) throw new Error('Disallowed token in function body');
+        // Build a safe function from expression (returns expression result)
+        const paramList = params === '' ? '' : params;
+        try {
+          return new Function(paramList, 'return (' + body + ')');
+        } catch (e) {
+          throw new Error('Failed to parse function: '+e.message);
+        }
+      }
+
+      throw new Error('Only simple arrow expressions or whitelisted global references are supported');
+    }
+
+    // Web Worker sandbox runner: executes a small snippet that returns the result
+    const workerBlob = new Blob([`
+      self.onmessage = function(e){
+        const { id, code } = e.data;
+        try {
+          // code is expected to be a string that returns a JSON-serializable value
+          const fn = new Function('return (' + code + ')');
+          const res = fn();
+          self.postMessage({ id, ok: true, result: res });
+        } catch (err) {
+          self.postMessage({ id, ok: false, error: err.message });
+        }
+      };
+    `], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(workerBlob);
+    let sandboxWorker = null;
+    function ensureWorker(){ if(!sandboxWorker) sandboxWorker = new Worker(workerUrl); }
+    function runInWorker(code){
+      return new Promise((resolve, reject)=>{
+        ensureWorker();
+        const id = Math.random().toString(36).slice(2);
+        const onmsg = (e)=>{
+          if(e.data && e.data.id === id){
+            sandboxWorker.removeEventListener('message', onmsg);
+            if(e.data.ok) resolve(e.data.result); else reject(new Error(e.data.error));
+          }
+        };
+        sandboxWorker.addEventListener('message', onmsg);
+        sandboxWorker.postMessage({ id, code });
+      });
+    }
+
+    // UI safe mode toggle
+    let SAFE_MODE = true;
+    const safeToggle = document.getElementById('safeToggle');
+    if (safeToggle) safeToggle.addEventListener('change', (e)=>{ SAFE_MODE = e.target.checked; });
+
+    const functions = {
+      "Arrays": {
+        "Array.contains": {
+          doc:"Checks if array contains an element.",
+          usage:`[1,2,3].contains(2); // => true`,
+          inputs:["Array (JSON)","Element"],
+          defaults:["[1,2,3]","2"],
+          run:(a,e)=>JSON.stringify(JSON.parse(a).contains(JSON.parse(e)))
+        },
+        "Array.difference": {
+          doc:"Finds elements not in both arrays.",
+          usage:`[1,2,3,4].difference([3,4,5]); // => [1,2,5]`,
+          inputs:["Array 1 (JSON)","Array 2 (JSON)"],
+          defaults:["[1,2,3,4]","[3,4,5]"],
+          run:(a,b)=>JSON.stringify(JSON.parse(a).difference(JSON.parse(b)))
+        },
+        "Array.unique": {
+          doc:"Removes duplicate values.",
+          usage:`[1,1,2,3].unique(); // => [1,2,3]`,
+          inputs:["Array (JSON)"],
+          defaults:["[1,1,2,3]"],
+          run:(a)=>JSON.stringify(JSON.parse(a).unique())
+        }
+        ,
+        "Array.iterator": {
+          doc: "Returns a simple iterator with hasNext/next.",
+          usage: `[1,2,3].iterator(); // => iterator with next()/hasNext()` ,
+          inputs: ["Array (JSON)"],
+          defaults: ["[1,2,3]"],
+          run: (a) => {
+            try {
+              const it = JSON.parse(a).iterator();
+              const res = [];
+              while (it.hasNext()) res.push(it.next());
+              return JSON.stringify(res);
+            } catch (e) { return 'Error: '+e.message }
+          }
+        },
+        "Array.concatAll": {
+          doc: "Concatenates another array.",
+          usage: `[1,2].concatAll([3,4]); // => [1,2,3,4]`,
+          inputs: ["Array (JSON)", "Array 2 (JSON)"],
+          defaults: ["[1,2]","[3,4]"],
+          run: (a,b) => JSON.stringify(JSON.parse(a).concatAll(JSON.parse(b)))
+        },
+        "Array.apply": {
+          doc: "Applies a function to each element (map).",
+          usage: `[1,2,3].apply(n=>n*2); // => [2,4,6]`,
+          inputs: ["Array (JSON)", "Function"],
+          defaults: ["[1,2,3]","(n)=>n*2"],
+          run: (a,fn) => {
+            try {
+              if (SAFE_MODE) {
+                // run the parsed function expression in the worker and then apply
+                return runInWorker(fn).then(fnRef => JSON.stringify(JSON.parse(a).apply(fnRef))).catch(e=> 'Error: '+e.message);
+              } else {
+                return JSON.stringify(JSON.parse(a).apply(parseFunctionString(fn)));
+              }
+            } catch(e){ return 'Error: '+e.message }
+          }
+        },
+        "Array.truthy": {
+          doc: "Filters truthy values.",
+          usage: `[0,1,false,true].truthy(); // => [1,true]`,
+          inputs: ["Array (JSON)"],
+          defaults: ["[0,1,false,true]"],
+          run: (a) => JSON.stringify(JSON.parse(a).truthy())
+        },
+        "Array.differenceBy": {
+          doc: "Finds difference using a mapper function.",
+          usage: `[1.1,2.2].differenceBy([1,2], x=>Math.floor(x));`,
+          inputs: ["Array 1 (JSON)","Array 2 (JSON)","Mapper (Function)"],
+          defaults: ["[1.1,2.2]","[1,2]","(x)=>Math.floor(x)"],
+          run: (a,b,fn) => {
+            try {
+              if (SAFE_MODE) {
+                return runInWorker(fn).then(fnRef => JSON.stringify(JSON.parse(a).differenceBy(JSON.parse(b), fnRef))).catch(e=> 'Error: '+e.message);
+              } else {
+                return JSON.stringify(JSON.parse(a).differenceBy(JSON.parse(b), parseFunctionString(fn)));
+              }
+            } catch(e){ return 'Error: '+e.message }
+          }
+        },
+        "Array.flatten": {
+          doc: "Flattens nested arrays to specified depth.",
+          usage: `[1,[2,[3]]].flatten(2); // => [1,2,3]`,
+          inputs: ["Array (JSON)","Depth"],
+          defaults: ["[1,[2,[3]]]","2"],
+          run: (a,d) => JSON.stringify(JSON.parse(a).flatten(d?+d:1))
+        },
+        "Array.groupBy": {
+          doc: "Groups elements by given function.",
+          usage: `[1,2,3,4].groupBy(n=>n%2);`,
+          inputs: ["Array (JSON)","Function"],
+          defaults: ["[1,2,3,4]","(n)=>n%2"],
+          run: (a,fn) => {
+            try {
+              if (SAFE_MODE) {
+                return runInWorker(fn).then(fnRef => JSON.stringify(JSON.parse(a).groupBy(fnRef))).catch(e=> 'Error: '+e.message);
+              } else {
+                return JSON.stringify(JSON.parse(a).groupBy(parseFunctionString(fn)));
+              }
+            } catch(e){ return 'Error: '+e.message }
+          }
+        },
+        "Array.chunk": {
+          doc: "Splits array into chunks of size.",
+          usage: `[1,2,3,4].chunk(2); // => [[1,2],[3,4]]`,
+          inputs: ["Array (JSON)","Size"],
+          defaults: ["[1,2,3,4]","2"],
+          run: (a,s) => JSON.stringify(JSON.parse(a).chunk(+s))
+        },
+        "Array.intersection": {
+          doc: "Returns intersection with another array.",
+          usage: `[1,2,3].intersection([2,3]); // => [2,3]`,
+          inputs: ["Array 1 (JSON)","Array 2 (JSON)"],
+          defaults: ["[1,2,3]","[2,3]"],
+          run: (a,b) => JSON.stringify(JSON.parse(a).intersection(JSON.parse(b)))
+        }
+        // … other array methods
+      },
+      "Strings": {
+        "String.capitalize": {
+          doc:"Capitalizes first letter.",
+          usage:`"hello".capitalize(); // => "Hello"`,
+          inputs:["String"],
+          defaults:["hello"],
+          run:(s)=>s.capitalize()
+        },
+        "String.reverse": {
+          doc:"Reverses string.",
+          usage:`"yoga".reverse(); // => "agoy"`,
+          inputs:["String"],
+          defaults:["yoga"],
+          run:(s)=>s.reverse()
+        }
+        ,
+        "String.camelCase": {
+          doc: "Converts dashed/underscored string to camelCase.",
+          usage: `"hello-world".camelCase(); // => "helloWorld"`,
+          inputs: ["String"],
+          defaults: ["hello-world"],
+          run: (s) => s.camelCase()
+        }
+      },
+      "Numbers": {
+        "Number.clamp": {
+          doc:"Clamps number within range.",
+          usage:`(15).clamp(0,10); // => 10`,
+          inputs:["Number","Min","Max"],
+          defaults:["15","0","10"],
+          run:(n,min,max)=>(+n).clamp(+min,+max)
+        },
+        "Number.toCurrency": {
+          doc:"Formats number as currency.",
+          usage:`(1234.5).toCurrency("en-US","USD");`,
+          inputs:["Number","Locale","Currency"],
+          defaults:["1234.5","en-US","USD"],
+          run:(n,l,c)=>(+n).toCurrency(l,c)
+        }
+      },
+      "Dates": {
+        "Date.format": {
+          doc:"Formats date.",
+          usage:`new Date().format("YYYY-MM-DD");`,
+          inputs:["Pattern"],
+          defaults:["YYYY-MM-DD"],
+          run:(p)=>new Date().format(p)
+        },
+        "Date.addDays": {
+          doc:"Adds days to date.",
+          usage:`new Date().addDays(5);`,
+          inputs:["Days"],
+          defaults:["5"],
+          run:(d)=>new Date().addDays(+d).toString()
+        }
+      },
+      "Objects": {
+        "Object.size": {
+          doc:"Counts keys.",
+          usage:`({a:1,b:2}).size(); // => 2`,
+          inputs:["Object (JSON)"],
+          defaults:['{"a":1,"b":2}'],
+          run:(o)=>JSON.parse(o).size()
+        },
+        "Object.mapValues": {
+          doc:"Maps values.",
+          usage:`({a:1,b:2}).mapValues(v=>v*2);`,
+          inputs:["Object (JSON)","Function"],
+          defaults:['{"a":1,"b":2}',"(v)=>v*2"],
+          run:(o,f)=>{
+            try {
+              if (SAFE_MODE) {
+                return runInWorker(f).then(fnRef => JSON.stringify(JSON.parse(o).mapValues(fnRef))).catch(e=> 'Error: '+e.message);
+              } else {
+                return JSON.stringify(JSON.parse(o).mapValues(parseFunctionString(f)));
+              }
+            } catch(e){ return 'Error: '+e.message }
+          }
+        }
+        ,
+        "Object.entries": {
+          doc: "Returns key/value pairs as array.",
+          usage: `({a:1}).entries(); // => [['a',1]]`,
+          inputs: ["Object (JSON)"],
+          defaults: ['{"a":1}'],
+          run: (o) => JSON.stringify(JSON.parse(o).entries())
+        },
+        "Object.pick": {
+          doc: "Picks provided keys.",
+          usage: `({a:1,b:2}).pick(['a']); // => {a:1}`,
+          inputs: ["Object (JSON)", "Keys (JSON array)"] ,
+          defaults: ['{"a":1,"b":2}','["a"]'],
+          run: (o,keys) => JSON.stringify(JSON.parse(o).pick(JSON.parse(keys)))
+        },
+        "Object.omit": {
+          doc: "Omits provided keys.",
+          usage: `({a:1,b:2}).omit(['b']); // => {a:1}`,
+          inputs: ["Object (JSON)", "Keys (JSON array)"],
+          defaults: ['{"a":1,"b":2}','["b"]'],
+          run: (o,keys) => JSON.stringify(JSON.parse(o).omit(JSON.parse(keys)))
+        },
+        "Object.deepClone": {
+          doc: "Creates a deep clone (structuredClone).",
+          usage: `({a:{b:1}}).deepClone();`,
+          inputs: ["Object (JSON)"],
+          defaults: ['{"a":{"b":1}}'],
+          run: (o) => JSON.stringify(JSON.parse(o).deepClone())
+        }
+      },
+      "Functions": {
+        "Function.memoize": {
+          doc:"Memoizes a function.",
+          usage:`const f=(n)=>n*2; const m=f.memoize(); m(2);`,
+          inputs:["Function","Arg"],
+          defaults:["(n)=>n*2","5"],
+          run:(fn,arg)=>{
+            try {
+              if (SAFE_MODE) {
+                return runInWorker(fn).then(fnRef => fnRef.memoize()(JSON.parse(arg))).catch(e=>'Error: '+e.message);
+              } else {
+                const fnRef = parseFunctionString(fn);
+                return fnRef.memoize()(JSON.parse(arg));
+              }
+            } catch(e){ return 'Error: '+e.message }
+          }
+        },
+        "Function.debounce": {
+          doc:"Debounces a function.",
+          usage:`(()=>console.log("hi")).debounce(300);`,
+          inputs:["Delay"],
+          defaults:["300"],
+          run:(d)=>"Debounced function created with "+d+"ms"
+        }
+        ,
+        "Function.curry": {
+          doc: "Partially applies arguments to a function.",
+          usage: `const f=(a,b)=>a+b; const c=f.curry(1); c(2); // => 3`,
+          inputs: ["Function","Arg (JSON)"] ,
+          defaults: ["(a,b)=>a+b","1"],
+          run: (fn,arg) => {
+            try {
+              if (SAFE_MODE) {
+                return runInWorker(fn).then(fnRef => {
+                  const cur = fnRef.curry(JSON.parse(arg));
+                  return typeof cur === 'function' ? 'Function (callable)' : String(cur);
+                }).catch(e=>'Error: '+e.message);
+              } else {
+                const fnRef = parseFunctionString(fn);
+                const cur = fnRef.curry(JSON.parse(arg));
+                return typeof cur === 'function' ? 'Function (callable)' : String(cur);
+              }
+            } catch (e) { return 'Error: '+e.message }
+          }
+        },
+        "Function.throttle": {
+          doc: "Creates a throttled function.",
+          usage: `(()=>console.log('hi')).throttle(200);`,
+          inputs: ["Delay"],
+          defaults: ["200"],
+          run: (d) => "Throttled function created with "+d+"ms"
+        }
+      }
+    };
+
+    const sidebar=document.getElementById("sidebar");
+    const content=document.getElementById("content");
+    const highlight=document.getElementById("highlight");
+    let activeBtn=null;
+
+    Object.entries(functions).forEach(([cat,items])=>{
+      const catLi=document.createElement("li");
+      catLi.innerHTML=`<div class="font-bold text-indigo-700 mt-2">${cat}</div>`;
+      sidebar.appendChild(catLi);
+      Object.keys(items).forEach(fn=>{
+        const li=document.createElement("li");
+        li.innerHTML=`<button class="sidebar-btn w-full text-left px-4 py-2 rounded hover:bg-indigo-50">${fn}</button>`;
+        const btn=li.querySelector("button");
+        btn.addEventListener("click",()=>showFunction(cat,fn,btn));
+        sidebar.appendChild(li);
+      });
+    });
+
+    function showFunction(cat,fn,btn){
+      const f=functions[cat][fn];
+      content.innerHTML=`
+        <h2 class="text-2xl font-bold text-indigo-700">${fn}</h2>
+        <p class="mt-2 text-gray-600">${f.doc}</p>
+        <pre class="mt-3 bg-gray-100 p-3 rounded text-sm text-left"><code>${f.usage}</code></pre>
+        <div id="inputs" class="mt-4 space-y-2"></div>
+        <button id="runBtn" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700">Run</button>
+        <pre id="output" class="mt-4 bg-gray-50 border p-3 rounded text-sm overflow-x-auto"></pre>
+      `;
+      const inputsDiv=content.querySelector("#inputs");
+      f.inputs.forEach((label,i)=>{
+        const inp=document.createElement("input");
+        inp.placeholder=label;
+        inp.className="w-full px-3 py-2 border rounded";
+        inp.id="inp"+i;
+        if(f.defaults&&f.defaults[i]) inp.value=f.defaults[i];
+        inputsDiv.appendChild(inp);
+      });
+      content.querySelector("#runBtn").addEventListener("click",async ()=>{
+        const values=f.inputs.map((_,i)=>document.getElementById("inp"+i).value);
+        const out = content.querySelector("#output");
+        out.textContent = 'Running...';
+        try {
+          const result = f.run(...values);
+          if (result && typeof result.then === 'function') {
+            const res = await result;
+            out.textContent = res;
+          } else {
+            out.textContent = result;
+          }
+        } catch(e) {
+          out.textContent = "Error: "+e.message;
+        }
+      });
+
+      // Animate content panel
+      gsap.fromTo(content,{opacity:0,y:18},{opacity:1,y:0,duration:0.35,ease:"power2.out"});
+
+        // Sidebar highlight
+    if(activeBtn) activeBtn.classList.remove("bg-indigo-50","font-semibold","text-indigo-700","active");
+    btn.classList.add("bg-indigo-50","font-semibold","text-indigo-700","active");
+    activeBtn=btn;
+        // Compute top relative to the sidebar container accounting for scroll and button offset
+        const top = btn.offsetTop - sidebar.scrollTop;
+        const height = btn.offsetHeight;
+        gsap.to(highlight,{
+          top: top,
+          height: height,
+          opacity:1,
+          duration:0.3,
+          ease:"power2.out"
+        });
+        // Ensure highlight updates when sidebar scrolls
+        // Remove any existing scroll handler to avoid duplicates
+        if (sidebar._highlightScrollHandler) sidebar.removeEventListener('scroll', sidebar._highlightScrollHandler);
+        sidebar._highlightScrollHandler = () => {
+          const top = btn.offsetTop - sidebar.scrollTop;
+          gsap.to(highlight, { top: top, duration: 0.15, ease: 'power1.out' });
+        };
+        sidebar.addEventListener('scroll', sidebar._highlightScrollHandler);
+    }
+
+    // Auto-select first function on load
+    window.addEventListener("load",()=>{
+      const first=sidebar.querySelector(".sidebar-btn");
+      if(first) first.click();
+    });
+  </script>
 </body>
 </html>
