@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Yoga.js – Bring balance to your JavaScript</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #000;
+      color: #fff;
+      overflow-x: hidden;
+    }
+    #bg-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    .overlay {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    header {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    h1 {
+      font-size: 4rem;
+      font-weight: 900;
+      color: #4ade80;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 25px #22c55e;
+    }
+    p {
+      max-width: 600px;
+      font-size: 1.2rem;
+      color: #bbb;
+      margin-bottom: 2rem;
+    }
+    .cta a {
+      background: rgba(34,197,94,0.15);
+      padding: 0.8rem 1.8rem;
+      border-radius: 30px;
+      text-decoration: none;
+      color: #4ade80;
+      font-weight: bold;
+      margin: 0 0.5rem;
+      border: 1px solid #22c55e;
+      backdrop-filter: blur(12px);
+      transition: 0.3s;
+      box-shadow: 0 0 15px rgba(34,197,94,0.6);
+    }
+    .cta a:hover {
+      background: #22c55e;
+      color: #fff;
+      box-shadow: 0 0 30px #22c55e;
+    }
+    section {
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 2;
+    }
+    h2 {
+      font-size: 2.2rem;
+      margin-bottom: 2rem;
+      color: #38bdf8;
+      text-shadow: 0 0 15px #38bdf8;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      padding: 2rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(12px);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-10px) rotateX(8deg) rotateY(8deg);
+      box-shadow: 0 0 25px rgba(56,189,248,0.8);
+    }
+    .card h3 {
+      color: #facc15;
+      margin-bottom: 1rem;
+    }
+    pre {
+      background: rgba(0,0,0,0.6);
+      color: #4ade80;
+      padding: 1.5rem;
+      border-radius: 12px;
+      overflow-x: auto;
+      max-width: 800px;
+      margin: 2rem auto;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    footer {
+      background: rgba(0,0,0,0.8);
+      padding: 2rem;
+      text-align: center;
+      color: #777;
+      font-size: 0.9rem;
+      position: relative;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="overlay">
+    <header>
+      <h1>Yoga.js</h1>
+      <p>Bring balance to your JavaScript.<br/>Extend Array, Object, String, Window and more with missing functions.</p>
+      <div class="cta">
+        <a href="https://github.com/vaseems/yoga.js">GitHub</a>
+        <a href="#">Docs</a>
+      </div>
+    </header>
+
+    <section>
+      <h2>Why Yoga.js?</h2>
+      <div class="features">
+        <div class="card">
+          <h3>Lightweight</h3>
+          <p>No bloat, no fuss. Just clean, minimal extensions to core JS objects.</p>
+        </div>
+        <div class="card">
+          <h3>Future-proof</h3>
+          <p>Polyfills & helpers that feel native. Use tomorrow’s JS today.</p>
+        </div>
+        <div class="card">
+          <h3>Readable</h3>
+          <p>Make code more intuitive. Arrays with <code>.first()</code> and <code>.last()</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Code Example</h2>
+      <pre>
+import "yoga.js";
+
+const arr = [1, 2, 3];
+console.log(arr.first()); // 1
+console.log(arr.last());  // 3
+
+const obj = { a: 1, b: 2 };
+console.log(obj.entries()); 
+// [["a",1],["b",2]]
+      </pre>
+    </section>
+
+    <footer>
+      © <span id="year"></span> Yoga.js — Balance your code
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Three.js particle galaxy background
+    const canvas = document.getElementById("bg-canvas");
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.position.z = 10;
+
+    const particlesCount = 2000;
+    const positions = new Float32Array(particlesCount * 3);
+    for (let i = 0; i < particlesCount * 3; i++) {
+      positions[i] = (Math.random() - 0.5) * 50;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const material = new THREE.PointsMaterial({ color: 0x38bdf8, size: 0.05, transparent: true, opacity: 0.8 });
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      points.rotation.y += 0.0008;
+      points.rotation.x += 0.0003;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
