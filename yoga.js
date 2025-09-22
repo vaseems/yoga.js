@@ -112,7 +112,7 @@
     };
 
     /* ---------------- Object ---------------- */
-    yoga.ekasana.size = function () {
+    yoga.ekasana.objSize = function () {
         return Object.keys(this).length;
     };
 

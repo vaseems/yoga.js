@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Yoga.js — JavaScript that powers JavaScript</title>
+  <meta name="description" content="Yoga.js extends native JavaScript objects with elegant, discoverable methods—no clutter, just power.">
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <style>
+    :root{
+      --bg:#0b0d15;
+      --bg-2:#0e1321;
+      --fg:#e9eefb;
+      --muted:#9fb0d0;
+      --brand:#7cf4e0;
+      --brand-2:#7c9cf4;
+      --card:#12172a;
+      --glass:rgba(255,255,255,0.07);
+      --border:rgba(255,255,255,0.1);
+      --accent:#f4c77c;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--fg);
+      background: radial-gradient(1200px 800px at 10% 10%, #0f1530 0%, var(--bg) 40%, #080a12 100%);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
+      -webkit-font-smoothing:antialiased;
+      overflow-x:hidden;
+    }
+    a{color:var(--brand);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .nav{
+      position:fixed; top:0; left:0; right:0; z-index:30;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 22px; backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(10,12,20,0.75), rgba(10,12,20,0));
+      border-bottom:1px solid var(--border);
+    }
+    .nav .logo{
+      display:flex; gap:10px; align-items:center; font-weight:700; letter-spacing:.3px;
+    }
+    .badge3d{
+      width:28px; height:28px; border-radius:8px;
+      background: conic-gradient(from 210deg, var(--brand), var(--brand-2), var(--accent), var(--brand));
+      filter: saturate(1.4);
+      box-shadow: 0 2px 10px rgba(124,244,224,0.25), inset 0 0 18px rgba(255,255,255,0.15);
+      transform: translateZ(0);
+    }
+    .nav .links{display:flex; gap:14px; align-items:center}
+    .btn{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:10px 14px; border-radius:12px; border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      color:var(--fg); text-decoration:none; font-weight:600;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 10px 30px rgba(0,0,0,0.25);
+      transform: translateZ(0);
+    }
+    .btn:hover{box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 10px 40px rgba(124,156,244,0.2)}
+    .btn.brand{border-color: rgba(124,244,224,0.3)}
+    .btn.ghost{background: transparent}
+
+    /* Hero */
+    .hero{
+      position:relative; height:100vh; display:grid; place-items:center; overflow:hidden;
+      padding-top:72px;
+    }
+    .hero-inner{
+      position:relative; z-index:2; display:grid; gap:22px; text-align:center; width:min(900px, 92vw);
+    }
+    .eyebrow{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:8px 12px; border-radius:999px; border:1px solid var(--border);
+      background: var(--glass);
+      color:var(--muted); font-weight:600; letter-spacing:.2px; margin:auto;
+      backdrop-filter: blur(8px);
+    }
+    h1{
+      margin:0; font-size: clamp(32px, 6vw, 68px);
+      line-height:1.05; letter-spacing:-0.02em;
+      text-wrap:balance;
+      background: linear-gradient(180deg, #fff, #cfe9ff);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      filter: drop-shadow(0 6px 18px rgba(10,12,20,0.6));
+    }
+    .sub{
+      color:var(--muted); font-size: clamp(16px, 2.2vw, 20px);
+      text-wrap:pretty; margin:0 auto; max-width:60ch;
+    }
+    .cta{display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
+
+    /* Canvas and glow */
+    #scene{
+      position:absolute; inset:0; z-index:1;
+    }
+    .hero-glow{
+      position:absolute; width:1200px; height:1200px; border-radius:50%;
+      background: radial-gradient(closest-side, rgba(124,244,224,0.18), rgba(124,156,244,0.10), transparent 70%);
+      filter: blur(40px); opacity:.7; transform: translate3d(-20%, -20%, 0) rotate(0.001deg);
+      pointer-events:none; z-index:0;
+    }
+
+    /* Tilt cards */
+    .grid{
+      position:relative; z-index:2;
+      display:grid; grid-template-columns: repeat(12, 1fr);
+      gap:18px; width:min(1100px, 92vw); margin:80px auto; align-items:stretch;
+    }
+    .card{
+      grid-column: span 4; background: var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:22px; position:relative; overflow:hidden;
+      transform-style: preserve-3d;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .card:hover{
+      border-color: rgba(124,244,224,0.35);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(124,244,224,0.08) inset;
+    }
+    .card .shine{
+      position:absolute; inset:-40%; background:
+        radial-gradient(400px 220px at var(--mx,50%) var(--my,50%),
+        rgba(124,244,224,0.15), rgba(124,156,244,0.06) 40%, transparent 70%);
+      mix-blend-mode: screen; pointer-events:none; transition: opacity .25s ease;
+      opacity:.8;
+    }
+    .card h3{margin:6px 0 8px; font-size:22px}
+    .card p{margin:0; color:var(--muted)}
+    .chip{
+      display:inline-flex; gap:8px; align-items:center; font-size:12px; font-weight:700;
+      letter-spacing:.3px; text-transform:uppercase; color:#0b1224;
+      background: linear-gradient(180deg, #7cf4e0, #7c9cf4);
+      padding:6px 10px; border-radius:999px; filter:saturate(1.2);
+    }
+
+    /* Code showcase */
+    .showcase{
+      width:min(1100px, 92vw); margin:120px auto; position:relative; z-index:2;
+      display:grid; grid-template-columns: 1.2fr .8fr; gap:24px;
+    }
+    .code{
+      background: #0c1122; border:1px solid var(--border); border-radius:16px;
+      padding:18px; position:relative; overflow:hidden;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+    }
+    .code pre{
+      margin:0; color:#cfe9ff; font: 500 14px/1.7 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      white-space:pre; overflow:auto; tab-size:2;
+    }
+    .code .header{
+      display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; color:var(--muted);
+    }
+    .panel{
+      background: var(--card); border:1px solid var(--border); border-radius:16px; padding:18px;
+    }
+    .panel h4{margin:0 0 4px}
+    .panel p{margin:0; color:var(--muted)}
+    .kbd{
+      display:inline-block; padding:2px 6px; border-radius:6px; border:1px solid var(--border);
+      background:rgba(255,255,255,0.04); font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
+      font-size:12px; color:var(--fg)
+    }
+
+    /* Footer */
+    footer{
+      padding:80px 0 60px; border-top:1px solid var(--border);
+      background: linear-gradient(0deg, rgba(10,12,20,0.9), rgba(10,12,20,0.4));
+    }
+    .footer-inner{
+      width:min(1100px, 92vw); margin:0 auto; display:grid; gap:10px;
+      color:var(--muted);
+    }
+    .brandMark{
+      display:flex; gap:10px; align-items:center; color:var(--fg); font-weight:700;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .grid .card{grid-column: span 6}
+      .showcase{grid-template-columns: 1fr; gap:18px}
+    }
+    @media (max-width: 640px){
+      .grid .card{grid-column: 1 / -1}
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none !important; transition:none !important}
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="logo">
+      <div class="badge3d" aria-hidden="true"></div>
+      <span>Yoga.js</span>
+    </div>
+    <div class="links">
+      <a class="btn ghost" href="#features">Features</a>
+      <a class="btn ghost" href="#examples">Examples</a>
+      <a class="btn brand" href="https://github.com/vaseems/yoga.js" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </nav>
+
+  <section class="hero" aria-label="Intro">
+    <canvas id="scene"></canvas>
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <span class="eyebrow">
+        <span class="dot" style="width:8px;height:8px;border-radius:999px;background:var(--brand)"></span>
+        JavaScript that powers JavaScript
+      </span>
+      <h1>Compose native power with elegant additions.</h1>
+      <p class="sub">
+        Yoga.js extends built‑ins with intuitive methods that read like the language itself—no new mental model, just less boilerplate and more flow.
+      </p>
+      <div class="cta">
+        <a class="btn brand" href="https://github.com/vaseems/yoga.js" target="_blank" rel="noopener">Get started</a>
+        <a class="btn" href="#examples">See it in action</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="grid" aria-label="Highlights">
+    <article class="card tilt">
+      <div class="shine"></div>
+      <span class="chip">Native first</span>
+      <h3>Feels built‑in</h3>
+      <p><strong>Approach:</strong> Methods live on familiar objects, so you write what you think—Arrays, Objects, Strings, Math, and friends.</p>
+    </article>
+    <article class="card tilt">
+      <div class="shine"></div>
+      <span class="chip">Less ceremony</span>
+      <h3>Fewer params, more signal</h3>
+      <p><strong>Benefit:</strong> Cut the scaffolding. Compose expressive operations without juggling utility scopes or helper imports.</p>
+    </article>
+    <article class="card tilt">
+      <div class="shine"></div>
+      <span class="chip">Ergonomics</span>
+      <h3>Discoverable fluency</h3>
+      <p><strong>DX:</strong> Autocomplete finds what you expect on the objects you already use, keeping flow unbroken.</p>
+    </article>
+  </section>
+
+  <section id="examples" class="showcase" aria-label="Examples">
+    <div class="code">
+      <div class="header">
+        <div>examples/playground.js</div>
+        <div><span class="kbd">Ctrl</span>+<span class="kbd">C</span></div>
+      </div>
+<pre><code>// Arrays that flow
+const a = [10, 20, 30];
+const b = [40, 50, 60];
+const all = a.concat(b); // ➜ [10,20,30,40,50,60]
+
+// Lightfoot iteration
+const it = a.iterator();
+while (a.hasNext()) console.log(a.next());
+
+// Object ergonomics
+const o = { foo: "bar", baz: 42 };
+const entries = o.entries(); // ➜ [["foo","bar"],["baz",42]]
+
+// Strings, Math — where you expect them
+// (Explore more in the docs)
+</code></pre>
+    </div>
+    <div class="panel">
+      <h4>Why Yoga?</h4>
+      <p><strong>Philosophy:</strong> “Yoga” means union—adding what’s needed to connect ideas smoothly. Extend what’s there; keep what’s great.</p>
+      <p style="margin-top:10px"><strong>Install:</strong> Drop the script or import the module, and your built‑ins wake up with new capabilities.</p>
+      <p style="margin-top:10px"><strong>Next:</strong> Browse the API and try the interactive playground.</p>
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap">
+        <a class="btn brand" href="https://github.com/vaseems/yoga.js" target="_blank" rel="noopener">Repository</a>
+        <a class="btn" href="https://vaseems.github.io/yoga.js/" target="_blank" rel="noopener">Docs</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="brandMark">
+        <div class="badge3d" aria-hidden="true"></div> Yoga.js
+      </div>
+      <div>Made for developers who prefer fluency over ceremony.</div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:6px">
+        <a href="https://github.com/vaseems/yoga.js" target="_blank" rel="noopener">GitHub</a>
+        <span>•</span>
+        <a href="https://vaseems.github.io/yoga.js/" target="_blank" rel="noopener">Documentation</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Three.js & GSAP via CDN -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js" type="module"></script>
+  <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://unpkg.com/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+  <script type="module">
+    // Scene setup
+    const canvas = document.getElementById('scene');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 8);
+
+    function resize(){
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      renderer.setPixelRatio(dpr);
+      renderer.setSize(innerWidth, innerHeight);
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Gradient fog
+    scene.fog = new THREE.FogExp2(0x0a0d19, 0.06);
+
+    // Particles (constellation rings)
+    const particleGroup = new THREE.Group();
+    scene.add(particleGroup);
+
+    const particleMat = new THREE.PointsMaterial({
+      color: 0x7cf4e0,
+      size: 0.04,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false
+    });
+
+    function ring(radius, count, jitter=0.18){
+      const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(count*3);
+      for(let i=0;i<count;i++){
+        const t = (i / count) * Math.PI * 2;
+        const r = radius + (Math.random()-0.5)*jitter;
+        const x = Math.cos(t)*r + (Math.random()-0.5)*0.15;
+        const y = (Math.random()-0.5)*0.25;
+        const z = Math.sin(t)*r + (Math.random()-0.5)*0.15;
+        positions.set([x,y,z], i*3);
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const pts = new THREE.Points(geo, particleMat.clone());
+      pts.material.color = new THREE.Color().setHSL(0.52 + Math.random()*0.08, 0.9, 0.7);
+      pts.rotation.x = Math.random()*0.6-0.3;
+      pts.rotation.y = Math.random()*0.6-0.3;
+      return pts;
+    }
+
+    const rings = [ring(1.2, 180), ring(2.0, 220), ring(3.2, 300), ring(4.4, 380)];
+    rings.forEach((r,i)=>{ r.material.size = 0.035 + i*0.01; particleGroup.add(r); });
+
+    // Wireframe capsule as subtle centerpiece
+    const capsule = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.65, 1.6, 8, 16),
+      new THREE.MeshBasicMaterial({ color: 0x7c9cf4, wireframe: true, transparent:true, opacity: 0.25 })
+    );
+    scene.add(capsule);
+
+    // Lights
+    const light1 = new THREE.PointLight(0x7cf4e0, 6, 10); light1.position.set(2, 1.2, 2); scene.add(light1);
+    const light2 = new THREE.PointLight(0x7c9cf4, 5, 10); light2.position.set(-2, -1.2, -1); scene.add(light2);
+
+    // Animate
+    let t = 0;
+    function animate(){
+      t += 0.005;
+      rings.forEach((r,i)=>{ r.rotation.y += 0.001 + i*0.0004; r.rotation.z += 0.0007; });
+      capsule.rotation.x = Math.sin(t*0.6)*0.15 + 0.2;
+      capsule.rotation.y += 0.004;
+      particleGroup.position.y = Math.sin(t*0.8)*0.08;
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Hero parallax
+    let mx = 0, my = 0;
+    window.addEventListener('pointermove', e=>{
+      const x = (e.clientX / innerWidth) - 0.5;
+      const y = (e.clientY / innerHeight) - 0.5;
+      mx = x; my = y;
+    });
+    gsap.ticker.add(()=>{
+      camera.position.x += (mx*0.8 - camera.position.x)*0.04;
+      camera.position.y += (-(my*0.6) - camera.position.y)*0.04;
+      camera.lookAt(0,0,0);
+    });
+
+    // Scroll reveals
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.from('.hero-inner .eyebrow', {y:20, opacity:0, duration:0.8, delay:0.2, ease:'power2.out'});
+    gsap.from('h1', {y:20, opacity:0, duration:0.9, delay:0.3, ease:'power2.out'});
+    gsap.from('.sub', {y:20, opacity:0, duration:0.9, delay:0.4, ease:'power2.out'});
+    gsap.from('.cta', {y:20, opacity:0, duration:0.9, delay:0.5, ease:'power2.out'});
+
+    gsap.utils.toArray('.card').forEach((el, i)=>{
+      gsap.from(el, {
+        scrollTrigger: { trigger: el, start: 'top 85%' },
+        y: 30, opacity: 0, duration: 0.6, ease: 'power2.out', delay: i*0.06
+      });
+    });
+
+    // Tilt + shine
+    const tilts = document.querySelectorAll('.tilt');
+    tilts.forEach(card=>{
+      card.addEventListener('pointermove', e=>{
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width;
+        const y = (e.clientY - r.top) / r.height;
+        const rx = (y - 0.5) * -10;
+        const ry = (x - 0.5) * 14;
+        card.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) translateZ(0)`;
+        card.style.setProperty('--mx', `${x*100}%`);
+        card.style.setProperty('--my', `${y*100}%`);
+      });
+      card.addEventListener('pointerleave', ()=>{
+        card.style.transform = 'rotateX(0deg) rotateY(0deg) translateZ(0)';
+      });
+    });
+
+    // Hero glow drift
+    const glow = document.querySelector('.hero-glow');
+    let g = 0;
+    gsap.ticker.add(()=>{
+      g += 0.003;
+      const dx = Math.sin(g)*10, dy = Math.cos(g*0.8)*10;
+      glow.style.transform = `translate3d(${dx - 20}%, ${dy - 20}%, 0)`;
+    });
+  </script>
+</body>
+</html>
