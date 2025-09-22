@@ -42,10 +42,11 @@
       text-shadow: 0 0 25px #22c55e;
     }
     p {
-      max-width: 600px;
+      max-width: 700px;
       font-size: 1.2rem;
       color: #bbb;
       margin-bottom: 2rem;
+      line-height: 1.7;
     }
     .cta a {
       background: rgba(34,197,94,0.15);
@@ -110,6 +111,15 @@
       text-align: left;
       border: 1px solid rgba(255,255,255,0.1);
     }
+    .about-card {
+      background: rgba(255,255,255,0.07);
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 900px;
+      margin: auto;
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 0 30px rgba(74,222,128,0.3);
+    }
     footer {
       background: rgba(0,0,0,0.8);
       padding: 2rem;
@@ -127,12 +137,30 @@
   <div class="overlay">
     <header>
       <h1>Yoga.js</h1>
-      <p>Bring balance to your JavaScript.<br/>Extend Array, Object, String, Window and more with missing functions.</p>
+      <p>Bring balance to your JavaScript.<br/>Extend Array, Object, String, Math, Window and more with missing functions.</p>
       <div class="cta">
         <a href="https://github.com/vaseems/yoga.js">GitHub</a>
         <a href="#">Docs</a>
       </div>
     </header>
+
+    <section>
+      <h2>The Philosophy of Yoga.js</h2>
+      <div class="about-card">
+        <p><strong>Why “Yoga”?</strong>  
+        In Vedic Sanskrit, <em>yoga</em> (from the root <em>yuj</em>) means “to add”, “to join”, “to unite”, or “to attach.”  
+        It also implies <em>connection</em>, <em>application</em>, <em>addition</em>, and <em>performance</em>.  
+        In simpler words, Yoga means <strong>combined</strong>.</p>
+
+        <p>In that spirit, <strong>Yoga.js unites JavaScript’s core objects</strong> with powerful missing functions.  
+        Arrays, Objects, Strings, Math, and more gain additional methods — seamlessly, as if natively supported by the JS engine.</p>
+
+        <p>Unlike other libraries that add bulky helpers in separate scopes, Yoga.js takes the minimalist approach:  
+        extending the objects you already use, with intuitive methods that reduce parameters, boilerplate, and mental overhead.</p>
+
+        <p><strong>Yoga.js powers JavaScript itself</strong> — making your code more connected, expressive, and balanced.</p>
+      </div>
+    </section>
 
     <section>
       <h2>Why Yoga.js?</h2>
@@ -176,7 +204,7 @@ console.log(obj.entries());
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // Three.js particle galaxy background
+    // Particle galaxy background
     const canvas = document.getElementById("bg-canvas");
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
@@ -184,10 +212,10 @@ console.log(obj.entries());
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.position.z = 10;
 
-    const particlesCount = 2000;
+    const particlesCount = 2500;
     const positions = new Float32Array(particlesCount * 3);
     for (let i = 0; i < particlesCount * 3; i++) {
-      positions[i] = (Math.random() - 0.5) * 50;
+      positions[i] = (Math.random() - 0.5) * 60;
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
